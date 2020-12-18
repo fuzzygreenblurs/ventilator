@@ -69,49 +69,23 @@ void loop() {
 void performBreath()
 {
   inhale();
-  // holdPip();
+  holdPip();
   exhale();
 }
 
 void readInputsAndStart()
 {
-
   int startButtonState = digitalRead(START);
-
-  Serial.print("st button state: ");
-  Serial.println(digitalRead(START));
-  delay(500);
 
   if (digitalRead(START) == 1 || stopped == false)
   {
     stopped = false;
     inputTidalVol = mapToTV(analogRead(TV_POT));
     inputRespRate = mapToRR(analogRead(RR_POT));
-
-    Serial.print("inputTidalVol:");
-    Serial.println(inputTidalVol);
-
-    Serial.print("inputRespRate:");
-    Serial.println(inputRespRate);
-
-    Serial.print("inputRespRate:");
-    Serial.println(inputRespRate);
-
     period       = (60 / inputRespRate) * 1000;
-    Serial.print("period: ");
-    Serial.println(period);
-    
     inhalePeriod = (period / (1 + IE_RATIO)) - HOLDING_PERIOD;
-    Serial.print("inhalePeriod: ");
-    Serial.println(inhalePeriod);
-
     exhalePeriod = period - (inhalePeriod + HOLDING_PERIOD);
-    Serial.print("exhalePeriod: ");
-    Serial.println(exhalePeriod);
-
     peepPeriod   = PEEP_EXHALE_RATIO * exhalePeriod;
-    Serial.print("peepPeriod: ");
-    Serial.println(peepPeriod);
   }
 }
 
@@ -119,14 +93,9 @@ void inhale()
 {
   if(stopped == true) {return;}
 
-  currentPosition   = 0;
+  currentPosition = 0;
   int finalPosition = mapVolumeToServoPosition(inputTidalVol);
-  Serial.print("final position:");
-  Serial.println(finalPosition);
-
-  float stepDelay     = calculateStepDelay(inhalePeriod, abs(finalPosition - currentPosition));
-  Serial.print("inhale step delay: ");
-  Serial.println(stepDelay);
+  float stepDelay = calculateStepDelay(inhalePeriod, abs(finalPosition - currentPosition));
 
   sendPWM(finalPosition, stepDelay);
 }
@@ -143,12 +112,8 @@ void exhale()
   sendPWM(SERVO_ZERO_STATE, 0);
 
   currentPressure = mapToPressure(analogRead(PRESSURE_SENSOR));
-  Serial.print("pressure during exhale: ");
-  Serial.println(currentPressure);
-
   if (currentPressure < TRIGGER_THRESHOLD)
   {
-    Serial.println("patient triggered pressure");
     performBreath();
   }
 }
@@ -172,8 +137,6 @@ int mapVolumeToServoPosition(int volume)
 
 float mapToPressure(int pressureSensorVoltage)
 {
-  Serial.print("Pressure Sensor voltage: ");
-  Serial.println(pressureSensorVoltage);
   return map(pressureSensorVoltage, 0, 1023, 0, MAX_AIRWAY_PRESSURE);
 }
 
