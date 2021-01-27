@@ -1,9 +1,11 @@
 #include <Servo.h>
+#include <LiquidCrystal.h>
 Servo BELLOWS_SERVO;
 
 // display LEDs
 #define POWER_LED 2       // LED to track when the system is powered ON/OFF
 #define ALARM_MOD 3       // this module includes an ALARM LED and associated audio buzzer
+LiquidCrystal lcd(10, 9, 7, 6, 5, 4);
 
 // user and sensor inputs
 #define START           A5 // push button to start the ventilator
@@ -53,6 +55,8 @@ void setup()
 
   digitalWrite(POWER_LED, HIGH);
 
+  lcd.begin(20, 3);  // Begin LCD with 20 columns and 3 rows
+
   BELLOWS_SERVO.attach(SERVO_PIN);
 
   sendPWM(SERVO_ZERO_STATE, 0);
@@ -82,6 +86,23 @@ void readInputsAndStart()
     stopped = false;
     inputTidalVol = mapToTV(analogRead(TV_POT));
     inputRespRate = mapToRR(analogRead(RR_POT));
+
+    lcd.clear();
+    lcd.print("Ventilator ON");
+    delay(1000);
+
+    lcd.clear();
+    lcd.print("Tidal Volume=");
+    lcd.setCursor(18,0);
+    lcd.print(inputTidalVol);
+    lcd.setCursor(0, 1);
+    lcd.print("Respiratory Rate=");
+    lcd.setCursor(18,1);
+    lcd.print(inputRespRate);
+    lcd.setCursor(0, 2);
+    lcd.print("I/E ratio= 4");
+    delay(2000);
+
     period       = (60 / inputRespRate) * 1000;
     inhalePeriod = (period / (1 + IE_RATIO)) - HOLDING_PERIOD;
     exhalePeriod = period - (inhalePeriod + HOLDING_PERIOD);
@@ -114,9 +135,25 @@ void exhale()
   currentPressure = mapToPressure(analogRead(PRESSURE_SENSOR));
   if (currentPressure < TRIGGER_THRESHOLD)
   {
+    lcd.clear();
+    lcd.print("Patient Triggered ");
     performBreath();
   }
 }
+
+void exceedMAX()
+{
+  lcd.clear();
+  lcd.print("WARNING");
+  lcd.setCursor(0, 1);
+  lcd.print("Exceeded MAX Pressure");
+
+  BELLOWS_SERVO.write(0);   //HALT Motor or make it return to initial position to decompress the bag
+  delay(2000);
+  lcd.clear();
+  lcd.print("Please RESET");
+}
+
 
 // low level methods
 
